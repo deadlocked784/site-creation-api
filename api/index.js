@@ -136,13 +136,15 @@ app.post('/site-creation/v1/wordpress', apiKeyAuth, (req, res) => {
     });
 
     // Send in-progress email
-    sendInProgressEmail(adminEmail, siteUrl).catch(console.error);
+    //sendInProgressEmail(adminEmail, siteUrl).catch(console.error);
 
     // Run the site creation process asynchronously
     (async () => {
         try {
             await runScript('create_wordpress_site.sh', [subdomain]);
             await runScript('install_wordpress.sh', [subdomain, siteTitle, adminUsername, adminEmail]);
+            await runScript('configure_wordpress.sh', [subdomain, siteTitle]);
+            
             // Prepare user arguments for configure_wordpress.sh
             let userArgs = [];
             if (users && users.length > 0) {
@@ -150,7 +152,10 @@ app.post('/site-creation/v1/wordpress', apiKeyAuth, (req, res) => {
                     userArgs.push(u.username, u.email, u.role, u.password || '');
                 });
             }
-            await runScript('configure_wordpress.sh', [subdomain, ...userArgs]);
+            if (userArgs.length > 0) {
+                await runScript('configure_wordpress.sh', [subdomain, siteTitle, ...userArgs]);
+            }
+            
             await runScript('setup_cron.sh', [subdomain]);
             console.log(`\n✨ Successfully completed all steps for ${subdomain}.`);
             // Read admin password from the site's .env file

@@ -6,7 +6,7 @@
 # This script automates the WordPress configurations and installs CiviCRM for a new site environment.
 
 # Usage:
-#   ./configure_wordpress.sh <Subdomain>
+#   ./configure_wordpress.sh <Subdomain> <SiteTitle> [username email role password ...]
 #
 
 
@@ -14,11 +14,12 @@ set -e
 # --- Load Global & Site Environment ---
 if [ ! -f .env ]; then echo "❌ Error: Global .env file not found." >&2; exit 1; fi
 set -a; source .env; set +a
-if [ "$#" -lt 1 ]; then
-    echo "❌ Error: Incorrect arguments. Usage: $0 <subdomain> [username email role password ...]" >&2
+if [ "$#" -lt 2 ]; then
+    echo "❌ Error: Incorrect arguments. Usage: $0 <subdomain> <site_title> [username email role password ...]" >&2
     exit 1
 fi
 SUBDOMAIN=$1
+SITE_TITLE=$2
 SITE_ENV_FILE="/var/www/html/${SUBDOMAIN}.${DOMAIN_NAME}/.env"
 if [ ! -f "$SITE_ENV_FILE" ]; then echo "❌ Error: Site .env file not found at $SITE_ENV_FILE." >&2; exit 1; fi
 source "$SITE_ENV_FILE"
@@ -44,8 +45,8 @@ docker-compose exec -T -u www-data wordpress wp user create generalo8 general@oc
 
 # --- Dynamic user creation from API ---
 # Arguments after the first are users: username email role password (repeat)
-if [ "$#" -gt 1 ]; then
-    shift # remove subdomain
+if [ "$#" -gt 2 ]; then
+    shift 2 # remove subdomain and site_title
     while [ "$#" -ge 4 ]; do
         USERNAME="$1"; EMAIL="$2"; ROLE="$3"; PASSWORD="$4"
         if [ -z "$PASSWORD" ]; then
@@ -57,6 +58,51 @@ if [ "$#" -gt 1 ]; then
     done
 fi
 
+# --- Install and Configure SMTP Plugin ---
+echo "Installing and configuring WP Mail SMTP plugin..."
+docker-compose exec -T -u www-data wordpress wp plugin install wp-mail-smtp --activate
+
+# Create JSON configuration for SMTP settings
+SMTP_CONFIG=$(cat <<EOF
+{
+    "mail": {
+        "from_email": "${FROM_EMAIL}",
+        "from_name": "${SITE_TITLE}",
+        "mailer": "smtp",
+        "return_path": false,
+        "from_email_force": true,
+        "from_name_force": true
+    },
+    "smtp": {
+        "host": "${SMTP_HOST}",
+        "port": "${SMTP_PORT}",
+        "encryption": "${SMTP_SECURE}",
+        "auth": true,
+        "user": "${SMTP_USER}",
+        "pass": "${SMTP_PASS}",
+        "autotls": true
+    }
+}
+EOF
+)
+
+echo "   - Configuring WP Mail SMTP settings..."
+docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp --format=json "$SMTP_CONFIG"
+docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_from "${SMTP_USER}"
+docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_from_name "${SITE_TITLE}"
+
+# Test SMTP Configuration and Send Reset Link
+echo "   - Testing SMTP and sending password reset..."
+docker-compose exec -T -u www-data wordpress wp eval "\
+    \$user = get_user_by('email', '${adminEmail}'); \
+    \$key = get_password_reset_key(\$user); \
+    \$reset_link = '${siteUrl}/wp-login.php?action=rp&key=' . \$key . '&login=' . rawurlencode(\$user->user_login); \
+    wp_mail('${adminEmail}', \
+        'Set up your WordPress admin account', \
+        'Please set up your WordPress admin account using this link: ' . \$reset_link \
+    );"
+
+echo "   - Password reset email sent to ${adminEmail}"
 
 # --- Copying CiviCRM and admin portal---
 SOURCE_SITE_DIR="/var/www/html/test.beavergiver.life"
