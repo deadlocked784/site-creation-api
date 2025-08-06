@@ -68,19 +68,14 @@ SMTP_CONFIG=$(cat <<EOF
     "mail": {
         "from_email": "${FROM_EMAIL}",
         "from_name": "${SITE_TITLE}",
-        "mailer": "smtp",
+        "mailer": "sendgrid",
         "return_path": false,
         "from_email_force": true,
         "from_name_force": true
     },
-    "smtp": {
-        "host": "${SMTP_HOST}",
-        "port": "${SMTP_PORT}",
-        "encryption": "${SMTP_SECURE}",
-        "auth": true,
-        "user": "${SMTP_USER}",
-        "pass": "${SMTP_PASS}",
-        "autotls": true
+    "sendgrid": {
+        "api_key": "${SMTP_PASS}",
+        "domain": "octopus8.com",
     }
 }
 EOF
@@ -88,7 +83,7 @@ EOF
 
 echo "   - Configuring WP Mail SMTP settings..."
 docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp --format=json "$SMTP_CONFIG"
-docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_from "${SMTP_USER}"
+docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_from "${FROM_EMAIL}"
 docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_from_name "${SITE_TITLE}"
 
 
