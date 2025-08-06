@@ -10,13 +10,13 @@ const app = express();
 app.use(express.json());
 
 const PORT = process.env.API_PORT || 3000;
-const SCRIPTS_PATH = process.env.SCRIPTS_PATH || './'; // Path to your 4 bash scripts
+const SCRIPTS_PATH = process.env.SCRIPTS_PATH || './'; 
 
-// Configure nodemailer transporter (example using Gmail, replace with your SMTP details)
+// Configure nodemailer transporter 
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT,
-    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    secure: process.env.SMTP_SECURE === 'true', 
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
@@ -45,7 +45,6 @@ function sendFailureEmail(to, siteUrl, error) {
     });
 }
 
-// Update the success email function to use password reset link
 function sendSuccessEmail(to, siteUrl, adminUsername) {
     const resetLink = `${siteUrl}/wp-login.php?action=lostpassword`;
     return transporter.sendMail({
@@ -66,7 +65,6 @@ This link will allow you to securely set your own password.`
     });
 }
 
-// Add new function to send reset emails to additional users
 function sendUserPasswordResetEmail(to, siteUrl, username) {
     const resetLink = `${siteUrl}/wp-login.php?action=lostpassword`;
     return transporter.sendMail({
@@ -173,24 +171,20 @@ app.post('/site-creation/v1/wordpress', apiKeyAuth, (req, res) => {
         try {
             await runScript('create_wordpress_site.sh', [subdomain]);
             await runScript('install_wordpress.sh', [subdomain, siteTitle, adminUsername, adminEmail]);
-            await runScript('configure_wordpress.sh', [subdomain, siteTitle]);
             
-            // Send admin success email
-            sendSuccessEmail(adminEmail, siteUrl, adminUsername).catch(console.error);
-
-            // Handle additional users
+            // Prepare user arguments
+            let userArgs = [];
             if (users && users.length > 0) {
-                let userArgs = [];
                 users.forEach(u => {
                     userArgs.push(u.username, u.email, u.role, u.password || '');
                     // Send password reset email to each user
                     sendUserPasswordResetEmail(u.email, siteUrl, u.username).catch(console.error);
                 });
-                
-                if (userArgs.length > 0) {
-                    await runScript('configure_wordpress.sh', [subdomain, siteTitle, ...userArgs]);
-                }
             }
+            
+            await runScript('configure_wordpress.sh', [subdomain, siteTitle, ...userArgs]);
+            
+            sendSuccessEmail(adminEmail, siteUrl, adminUsername).catch(console.error);
             
             await runScript('setup_cron.sh', [subdomain]);
             console.log(`\n✨ Successfully completed all steps for ${subdomain}.`);
@@ -201,7 +195,6 @@ app.post('/site-creation/v1/wordpress', apiKeyAuth, (req, res) => {
             sendFailureEmail(adminEmail, siteUrl, error.message).catch(console.error);
         }
     })();
-});
 
 app.listen(PORT, () => {
     console.log(`🚀 WordPress Creation API listening on port ${PORT}`);
