@@ -45,14 +45,44 @@ function sendFailureEmail(to, siteUrl, error) {
     });
 }
 
-function sendSuccessEmail(to, siteUrl, adminUsername, adminPassword) {
+// Update the success email function to use password reset link
+function sendSuccessEmail(to, siteUrl, adminUsername) {
+    const resetLink = `${siteUrl}/wp-login.php?action=lostpassword`;
     return transporter.sendMail({
         from: process.env.FROM_EMAIL.includes('<')
             ? process.env.FROM_EMAIL
             : `"O8 Site Creation" <${process.env.FROM_EMAIL}>`,
         to,
         subject: 'Your WordPress site is ready!',
-        text: `Your new WordPress site is ready at ${siteUrl}\n\nAdmin Username: ${adminUsername}\nAdmin Password: ${adminPassword}\n\nPlease log in and change your password immediately.`
+        text: `Your new WordPress site is ready!
+
+Site URL: ${siteUrl}
+Admin Username: ${adminUsername}
+
+To set up your password, please visit:
+${resetLink}
+
+This link will allow you to securely set your own password.`
+    });
+}
+
+// Add new function to send reset emails to additional users
+function sendUserPasswordResetEmail(to, siteUrl, username) {
+    const resetLink = `${siteUrl}/wp-login.php?action=lostpassword`;
+    return transporter.sendMail({
+        from: process.env.FROM_EMAIL.includes('<')
+            ? process.env.FROM_EMAIL
+            : `"O8 Site Creation" <${process.env.FROM_EMAIL}>`,
+        to,
+        subject: 'Set up your WordPress account',
+        text: `An account has been created for you on ${siteUrl}
+
+Username: ${username}
+
+To set up your password, please visit:
+${resetLink}
+
+This link will allow you to securely set your own password.`
     });
 }
 
@@ -145,39 +175,29 @@ app.post('/site-creation/v1/wordpress', apiKeyAuth, (req, res) => {
             await runScript('install_wordpress.sh', [subdomain, siteTitle, adminUsername, adminEmail]);
             await runScript('configure_wordpress.sh', [subdomain, siteTitle]);
             
-            // Prepare user arguments for configure_wordpress.sh
-            let userArgs = [];
+            // Send admin success email
+            sendSuccessEmail(adminEmail, siteUrl, adminUsername).catch(console.error);
+
+            // Handle additional users
             if (users && users.length > 0) {
+                let userArgs = [];
                 users.forEach(u => {
                     userArgs.push(u.username, u.email, u.role, u.password || '');
+                    // Send password reset email to each user
+                    sendUserPasswordResetEmail(u.email, siteUrl, u.username).catch(console.error);
                 });
-            }
-            if (userArgs.length > 0) {
-                await runScript('configure_wordpress.sh', [subdomain, siteTitle, ...userArgs]);
+                
+                if (userArgs.length > 0) {
+                    await runScript('configure_wordpress.sh', [subdomain, siteTitle, ...userArgs]);
+                }
             }
             
             await runScript('setup_cron.sh', [subdomain]);
             console.log(`\n✨ Successfully completed all steps for ${subdomain}.`);
-            // Read admin password from the site's .env file
-            const siteEnvPath = path.join('/var/www/html', `${subdomain}.${process.env.DOMAIN_NAME}`, '.env');
-            let adminPasswordOut = '';
-            try {
-                const envContent = fs.readFileSync(siteEnvPath, 'utf8');
-                const match = envContent.match(/^ADMIN_PASSWORD="?([^"\n]+)"?/m);
-                if (match) {
-                    adminPasswordOut = match[1];
-                } else {
-                    console.error('Could not find ADMIN_PASSWORD in site .env file');
-                }
-            } catch (err) {
-                console.error('Failed to read site .env file:', err);
-            }
-            // Send success email with credentials
-            sendSuccessEmail(adminEmail, siteUrl, adminUsername, adminPasswordOut).catch(console.error);
+
         } catch (error) {
             console.error(`🔥 An error occurred during the site creation process for ${subdomain}.`);
             console.error(error.message);
-            // Send failure notification email
             sendFailureEmail(adminEmail, siteUrl, error.message).catch(console.error);
         }
     })();

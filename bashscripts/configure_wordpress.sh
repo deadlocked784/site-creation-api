@@ -94,13 +94,8 @@ echo "   - Configuring WP Mail SMTP settings..."
 docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp --format=json "$SMTP_CONFIG"
 
 # Configure additional required options
-docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_version "3.9.0"
 docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_activated_time "$(date +%s)"
 docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_key "$(openssl rand -hex 16)"
-
-# Test the email configuration
-echo "   - Testing SendGrid configuration..."
-docker-compose exec -T -u www-data wordpress wp eval "wp_mail('${FROM_EMAIL}', 'SendGrid Test', 'This is a test email from WordPress SendGrid configuration.');"
 
 
 # --- Copying CiviCRM and admin portal---
