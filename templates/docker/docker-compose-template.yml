@@ -1,0 +1,24 @@
+# docker-compose.template.yml
+
+services:
+
+  wordpress:
+    build: .
+    volumes:
+      - ./app:/var/www/html
+      - ./uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+    ports:
+      - "{PORT}:80"
+
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: {RDS_HOST}
+      WORDPRESS_DB_NAME: {DB_NAME}
+      WORDPRESS_DB_USER: {DB_USER}
+      WORDPRESS_DB_PASSWORD: {DB_PASSWORD}
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: {SUBNET}

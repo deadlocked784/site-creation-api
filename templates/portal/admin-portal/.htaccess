@@ -1,0 +1,13 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Handle client-side routing
+    RewriteBase /admin-portal/
+    
+    # Don't rewrite requests for actual files and directories
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Serve index.html for all other requests
+    RewriteRule . index.html [L]
+</IfModule>

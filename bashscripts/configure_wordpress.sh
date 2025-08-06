@@ -58,13 +58,14 @@ if [ "$#" -gt 1 ]; then
 fi
 
 
-# --- Copying CiviCRM ---
+# --- Copying CiviCRM and admin portal---
 SOURCE_SITE_DIR="/var/www/html/test.beavergiver.life"
 echo "   - Migrating plugins ..."
 if [ ! -d "$SOURCE_SITE_DIR" ]; then
     echo "⚠️ Warning: Source site directory '$SOURCE_SITE_DIR' not found. Skipping plugin migration."
 else
     cp -rp "$SOURCE_SITE_DIR/app/wp-content/plugins/civicrm" "$SITE_DIR/app/wp-content/plugins"
+    cp -rp "/var/www/html/site-creation-api/templates/portal/admin-portal" "$SITE_DIR/app"
     echo "✅ CiviCRM migrated successfully."
 fi
 
@@ -87,6 +88,9 @@ docker-compose exec -T -u www-data wordpress cv core:install --cms-base-url="$FU
 
 echo "  - Installing & Activating CiviCRM extensions..."
 cp -rp "$SOURCE_SITE_DIR/app/wp-content/uploads/civicrm/ext/"* "$SITE_DIR/app/wp-content/uploads/civicrm/ext"
+cp -rp "/var/www/html/site-creation-api/templates/portal/com.octopus8.adminportalconfig" "$SITE_DIR/app/wp-content/uploads/civicrm/ext"
 docker-compose exec -T -u www-data wordpress cv en theisland
+docker-compose exec -T -u www-data wordpress cv en com.octopus8.adminportalconfig
+
 
 echo "✅ (3/4) WordPress configuration and CiviCRM installation finished."

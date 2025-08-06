@@ -137,7 +137,7 @@ echo "🚀 Starting site creation for '$SUBDOMAIN'..."
 
 # 1. Define Site and Database Variables
 SITE_DIR="/var/www/html/${SUBDOMAIN}.${DOMAIN_NAME}"
-TEMPLATES="/var/www/html/siteautomation"
+TEMPLATES="/var/www/html/site-creation-api/templates/docker"
 DB_NAME="api_bg_${SUBDOMAIN//-/_}" # Replace hyphens with underscores for DB name
 DB_USER="$DB_NAME"
 
