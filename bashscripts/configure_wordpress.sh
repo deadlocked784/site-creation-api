@@ -93,7 +93,7 @@ docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_
 
 # Test SMTP Configuration and Send Reset Link
 echo "   - Sending password reset email..."
-docker-compose exec -T -u www-data wordpress wp user reset-password ${adminUsername} --skip-confirm
+docker-compose exec -T -u www-data wordpress wp user reset-password ${adminUsername} 
 
 echo "   - Password reset email sent to ${adminEmail}"
 
