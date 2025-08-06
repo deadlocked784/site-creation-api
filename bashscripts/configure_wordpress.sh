@@ -91,11 +91,7 @@ docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp --for
 docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_from "${SMTP_USER}"
 docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_from_name "${SITE_TITLE}"
 
-# Test SMTP Configuration and Send Reset Link
-echo "   - Sending password reset email..."
-docker-compose exec -T -u www-data wordpress wp user reset-password ${adminUsername} 
 
-echo "   - Password reset email sent to ${adminEmail}"
 
 # --- Copying CiviCRM and admin portal---
 SOURCE_SITE_DIR="/var/www/html/test.beavergiver.life"
