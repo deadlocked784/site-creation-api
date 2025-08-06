@@ -62,7 +62,7 @@ fi
 echo "Installing and configuring WP Mail SMTP plugin..."
 docker-compose exec -T -u www-data wordpress wp plugin install wp-mail-smtp --activate
 
-# Create JSON configuration for SMTP settings
+# Create JSON configuration for SendGrid settings
 SMTP_CONFIG=$(cat <<EOF
 {
     "mail": {
@@ -76,6 +76,15 @@ SMTP_CONFIG=$(cat <<EOF
     "sendgrid": {
         "api_key": "${SMTP_PASS}",
         "domain": "octopus8.com",
+        "from_name": "${SITE_TITLE}",
+        "from_email": "${FROM_EMAIL}",
+        "force_from_name": true,
+        "force_from_email": true,
+        "return_path": false
+    },
+    "general": {
+        "do_not_send": false,
+        "is_mailer_complete": true
     }
 }
 EOF
@@ -83,9 +92,15 @@ EOF
 
 echo "   - Configuring WP Mail SMTP settings..."
 docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp --format=json "$SMTP_CONFIG"
-docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_from "${FROM_EMAIL}"
-docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_from_name "${SITE_TITLE}"
 
+# Configure additional required options
+docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_version "3.9.0"
+docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_activated_time "$(date +%s)"
+docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_key "$(openssl rand -hex 16)"
+
+# Test the email configuration
+echo "   - Testing SendGrid configuration..."
+docker-compose exec -T -u www-data wordpress wp eval "wp_mail('${FROM_EMAIL}', 'SendGrid Test', 'This is a test email from WordPress SendGrid configuration.');"
 
 
 # --- Copying CiviCRM and admin portal---
