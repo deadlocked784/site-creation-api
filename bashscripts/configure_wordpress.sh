@@ -100,7 +100,6 @@ docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_
 # Install and activate Elementor
 echo "   - Installing and activating Elementor..."
 docker-compose exec -T -u www-data wordpress wp plugin install elementor --activate
-docker-compose exec -T -u www-data wordpress wp plugin install elementor-pro --activate || true
 
 # --- Import and Configure Front Page ---
 echo "   - Setting up front page from template..."

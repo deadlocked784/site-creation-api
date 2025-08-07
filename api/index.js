@@ -245,7 +245,7 @@ app.post('/site-creation/v1/wordpress',
 
     // Run the site creation process asynchronously
     (async () => {
-        const logoPath = req.file ? req.file.path : null;  // Move this to the top
+        const logoPath = req.file ? req.file.path : null;
         
         try {
             await runScript('create_wordpress_site.sh', [subdomain]);
@@ -267,6 +267,13 @@ app.post('/site-creation/v1/wordpress',
             console.log('   - All Arguments:', configArgs);
 
             await runScript('configure_wordpress.sh', configArgs);
+            
+            // Setup cron jobs after successful configuration
+            await runScript('setup_cron.sh', [subdomain]);
+            
+            // Send success email
+            await sendSuccessEmail(adminEmail, siteUrl, adminUsername);
+            console.log(`\n✨ Successfully completed all steps for ${subdomain}`);
 
         } catch (error) {
             console.error(`🔥 An error occurred during the site creation process for ${subdomain}.`);
