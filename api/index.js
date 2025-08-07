@@ -195,6 +195,7 @@ app.post('/site-creation/v1/wordpress', apiKeyAuth, (req, res) => {
             sendFailureEmail(adminEmail, siteUrl, error.message).catch(console.error);
         }
     })();
+}
 
 app.listen(PORT, () => {
     console.log(`🚀 WordPress Creation API listening on port ${PORT}`);
