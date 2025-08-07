@@ -98,6 +98,21 @@ docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_activ
 docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_key "$(openssl rand -hex 16)"
 
 
+# --- Handle Site Icon Upload ---
+if [ "$#" -gt 2 ] && [ -f "$3" ]; then
+    echo "   - Setting up site icon from uploaded image..."
+    # Import the media file
+    ICON_ID=$(docker-compose exec -T -u www-data wordpress wp media import "$3" --porcelain)
+    
+    if [ -n "$ICON_ID" ]; then
+        # Set as site icon
+        docker-compose exec -T -u www-data wordpress wp option update site_icon "$ICON_ID"
+        echo "✅ Site icon set successfully"
+    else
+        echo "⚠️ Warning: Failed to import site icon"
+    fi
+fi
+
 # --- Copying CiviCRM and admin portal---
 SOURCE_SITE_DIR="/var/www/html/test.beavergiver.life"
 echo "   - Migrating plugins ..."
