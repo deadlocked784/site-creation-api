@@ -4,250 +4,125 @@ namespace Services;
 
 class ReportService
 {
-    // public static function getRowsByInstanceId(int $id): ?array
-    // {
-    //     //Retrieve SavedSearch by ID
-    //     $savedSearch = \Civi\Api4\SavedSearch::get(TRUE)
-    //         ->addWhere('id', '=', $id)
-    //         ->execute()
-    //         ->first();
-
-    //     if (!$savedSearch || empty($savedSearch['api_entity']) || empty($savedSearch['api_params'])) {
-    //         return null;
-    //     }
-
-    //     $apiEntity = $savedSearch['api_entity'];
-    //     $apiParams = $savedSearch['api_params'];
-    //     $className = "\\Civi\\Api4\\{$apiEntity}";
-    //     if (!class_exists($className)) {
-    //         return null;
-    //     }
-
-    //     $query = $className::get(TRUE)->setCheckPermissions(FALSE);
-
-    //     // Step 4: Apply API params dynamically
-    //     foreach ($apiParams as $method => $value) {
-    //         if ($method === 'version')
-    //             continue;
-
-    //         if ($method === 'select' && is_array($value)) {
-    //             foreach ($value as $field) {
-    //                 $query->addSelect($field);
-    //             }
-    //             continue;
-    //         }
-
-    //         if ($method === 'where' && is_array($value)) {
-    //             foreach ($value as $condition) {
-    //                 if (!empty($condition)) {
-    //                     $query->addWhere(...$condition);
-    //                 }
-    //             }
-    //             continue;
-    //         }
-
-    //         if ($method === 'join' && is_array($value)) {
-    //             foreach ($value as $join) {
-    //                 if (!empty($join)) {
-    //                     $query->addJoin(...$join);
-    //                 }
-    //             }
-    //             continue;
-    //         }
-
-    //         if ($method === 'having' && is_array($value)) {
-    //             foreach ($value as $having) {
-    //                 if (!empty($having)) {
-    //                     $query->addHaving(...$having);
-    //                 }
-    //             }
-    //             continue;
-    //         }
-
-    //         if ($method === 'groupBy' && is_array($value)) {
-    //             if (!empty($value)) {
-    //                 $query->addGroupBy(...$value);
-    //             }
-    //             continue;
-    //         }
-
-    //         if ($method === 'orderBy' && is_array($value)) {
-    //             foreach ($value as $order) {
-    //                 if (!empty($order)) {
-    //                     $query->addOrderBy(...$order);
-    //                 }
-    //             }
-    //             continue;
-    //         }
-
-    //         if ($method === 'limit') {
-    //             $query->setLimit((int) $value);
-    //             continue;
-    //         }
-    //     }
-
-    //     $rows = iterator_to_array($query->execute());
-
-    //     if (empty($apiParams['select']) && !empty($rows)) {
-    //         $firstRow = $rows[0];
-    //         if (is_array($firstRow)) {
-    //             $apiParams['select'] = array_keys($firstRow);
-    //         } elseif (is_object($firstRow)) {
-    //             $apiParams['select'] = array_keys(get_object_vars($firstRow));
-    //         }
-    //     }
-
-    //     //Get label overrides from SearchDisplay
-    //     $display = \Civi\Api4\SearchDisplay::get(TRUE)
-    //         ->addWhere('saved_search_id', '=', $id)
-    //         ->setCheckPermissions(false)
-    //         ->execute()
-    //         ->first();
-
-    //     $labelOverrides = [];
-    //     if ($display && !empty($display['settings']['columns'])) {
-    //         foreach ($display['settings']['columns'] as $col) {
-    //             if (!empty($col['key']) && !empty($col['label'])) {
-    //                 $labelOverrides[$col['key']] = $col['label'];
-    //             }
-    //         }
-    //     }
-
-    //     return [
-    //         'name' => $savedSearch['name'] ?? null,
-    //         'label' => $savedSearch['label'] ?? null,
-    //         'api_entity' => $apiEntity,
-    //         'api_params' => $apiParams,
-    //         'columns' => $apiParams['select'] ?? [],
-    //         'rows' => $rows,
-    //         'labelOverrides' => $labelOverrides, // send this to frontend
-    //     ];
-    // }
-
     public static function getRowsByInstanceId(int $id): ?array
-{
-    // Retrieve SavedSearch by ID
-    $savedSearch = \Civi\Api4\SavedSearch::get(TRUE)
-        ->addWhere('id', '=', $id)
-        ->execute()
-        ->first();
+    {
+        //Retrieve SavedSearch by ID
+        $savedSearch = \Civi\Api4\SavedSearch::get(TRUE)
+            ->addWhere('id', '=', $id)
+            ->execute()
+            ->first();
 
-    if (!$savedSearch || empty($savedSearch['api_entity']) || empty($savedSearch['api_params'])) {
-        return null;
-    }
-
-    $apiEntity = $savedSearch['api_entity'];
-    $apiParams = $savedSearch['api_params'];
-    $className = "\\Civi\\Api4\\{$apiEntity}";
-    if (!class_exists($className)) {
-        return null;
-    }
-
-    $query = $className::get(TRUE)->setCheckPermissions(FALSE);
-
-    // Apply API params dynamically
-    foreach ($apiParams as $method => $value) {
-        if ($method === 'version') continue;
-
-        if ($method === 'select' && is_array($value)) {
-            foreach ($value as $field) {
-                $query->addSelect($field);
-            }
-            continue;
+        if (!$savedSearch || empty($savedSearch['api_entity']) || empty($savedSearch['api_params'])) {
+            return null;
         }
 
-        if ($method === 'where' && is_array($value)) {
-            foreach ($value as $condition) {
-                if (!empty($condition)) {
-                    $query->addWhere(...$condition);
+        $apiEntity = $savedSearch['api_entity'];
+        $apiParams = $savedSearch['api_params'];
+        $className = "\\Civi\\Api4\\{$apiEntity}";
+        if (!class_exists($className)) {
+            return null;
+        }
+
+        $query = $className::get(TRUE)->setCheckPermissions(FALSE);
+
+        // Step 4: Apply API params dynamically
+        foreach ($apiParams as $method => $value) {
+            if ($method === 'version')
+                continue;
+
+            if ($method === 'select' && is_array($value)) {
+                foreach ($value as $field) {
+                    $query->addSelect($field);
+                }
+                continue;
+            }
+
+            if ($method === 'where' && is_array($value)) {
+                foreach ($value as $condition) {
+                    if (!empty($condition)) {
+                        $query->addWhere(...$condition);
+                    }
+                }
+                continue;
+            }
+
+            if ($method === 'join' && is_array($value)) {
+                foreach ($value as $join) {
+                    if (!empty($join)) {
+                        $query->addJoin(...$join);
+                    }
+                }
+                continue;
+            }
+
+            if ($method === 'having' && is_array($value)) {
+                foreach ($value as $having) {
+                    if (!empty($having)) {
+                        $query->addHaving(...$having);
+                    }
+                }
+                continue;
+            }
+
+            if ($method === 'groupBy' && is_array($value)) {
+                if (!empty($value)) {
+                    $query->addGroupBy(...$value);
+                }
+                continue;
+            }
+
+            if ($method === 'orderBy' && is_array($value)) {
+                foreach ($value as $order) {
+                    if (!empty($order)) {
+                        $query->addOrderBy(...$order);
+                    }
+                }
+                continue;
+            }
+
+            if ($method === 'limit') {
+                $query->setLimit((int) $value);
+                continue;
+            }
+        }
+
+        $rows = iterator_to_array($query->execute());
+
+        if (empty($apiParams['select']) && !empty($rows)) {
+            $firstRow = $rows[0];
+            if (is_array($firstRow)) {
+                $apiParams['select'] = array_keys($firstRow);
+            } elseif (is_object($firstRow)) {
+                $apiParams['select'] = array_keys(get_object_vars($firstRow));
+            }
+        }
+
+        //Get label overrides from SearchDisplay
+        $display = \Civi\Api4\SearchDisplay::get(TRUE)
+            ->addWhere('saved_search_id', '=', $id)
+            ->setCheckPermissions(false)
+            ->execute()
+            ->first();
+
+        $labelOverrides = [];
+        if ($display && !empty($display['settings']['columns'])) {
+            foreach ($display['settings']['columns'] as $col) {
+                if (!empty($col['key']) && !empty($col['label'])) {
+                    $labelOverrides[$col['key']] = $col['label'];
                 }
             }
-            continue;
         }
 
-        if ($method === 'join' && is_array($value)) {
-            foreach ($value as $join) {
-                if (!empty($join)) {
-                    $query->addJoin(...$join);
-                }
-            }
-            continue;
-        }
-
-        if ($method === 'having' && is_array($value)) {
-            foreach ($value as $having) {
-                if (!empty($having)) {
-                    $query->addHaving(...$having);
-                }
-            }
-            continue;
-        }
-
-        if ($method === 'groupBy' && is_array($value)) {
-            if (!empty($value)) {
-                $query->addGroupBy(...$value);
-            }
-            continue;
-        }
-
-        if ($method === 'orderBy' && is_array($value)) {
-            foreach ($value as $order) {
-                if (!empty($order)) {
-                    $query->addOrderBy(...$order);
-                }
-            }
-            continue;
-        }
-
-        if ($method === 'limit') {
-            $query->setLimit((int) $value);
-            continue;
-        }
+        return [
+            'name' => $savedSearch['name'] ?? null,
+            'label' => $savedSearch['label'] ?? null,
+            'api_entity' => $apiEntity,
+            'api_params' => $apiParams,
+            'columns' => $apiParams['select'] ?? [],
+            'rows' => $rows,
+            'labelOverrides' => $labelOverrides, // send this to frontend
+        ];
     }
-
-    $rows = iterator_to_array($query->execute());
-
-    // Log details using error_log for XAMPP environment
-    error_log("SearchKit Results for entity: {$apiEntity}");
-    error_log("API Params: " . print_r($apiParams, true));
-    error_log("Number of rows fetched: " . count($rows));
-    error_log("Sample rows:\n" . print_r(array_slice($rows, 0, 3), true));
-
-    if (empty($apiParams['select']) && !empty($rows)) {
-        $firstRow = $rows[0];
-        if (is_array($firstRow)) {
-            $apiParams['select'] = array_keys($firstRow);
-        } elseif (is_object($firstRow)) {
-            $apiParams['select'] = array_keys(get_object_vars($firstRow));
-        }
-    }
-
-    // Get label overrides from SearchDisplay
-    $display = \Civi\Api4\SearchDisplay::get(TRUE)
-        ->addWhere('saved_search_id', '=', $id)
-        ->setCheckPermissions(false)
-        ->execute()
-        ->first();
-
-    $labelOverrides = [];
-    if ($display && !empty($display['settings']['columns'])) {
-        foreach ($display['settings']['columns'] as $col) {
-            if (!empty($col['key']) && !empty($col['label'])) {
-                $labelOverrides[$col['key']] = $col['label'];
-            }
-        }
-    }
-
-    return [
-        'name' => $savedSearch['name'] ?? null,
-        'label' => $savedSearch['label'] ?? null,
-        'api_entity' => $apiEntity,
-        'api_params' => $apiParams,
-        'columns' => $apiParams['select'] ?? [],
-        'rows' => $rows,
-        'labelOverrides' => $labelOverrides,
-    ];
-}
 
     public static function getById(int $id): ?array
     {

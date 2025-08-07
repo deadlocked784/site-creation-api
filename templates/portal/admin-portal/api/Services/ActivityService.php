@@ -307,7 +307,6 @@ class ActivityService
         }
     }
 
-
     /**
      * Update an existing activity by ID.
      *
@@ -340,126 +339,44 @@ class ActivityService
      */
 
    
-    // public static function bulkUpdateActivityStatus(array $ids, $newStatus): array
-    // {
+    public static function bulkUpdateActivityStatus(array $ids, $newStatus): array
+    {
 
 
-    //     $updatedActivities = [];
+        $updatedActivities = [];
 
         
-    //         // If the status is a string (e.g. "Completed"), look up its ID
-    //         if (!is_numeric($newStatus)) {
-    //             $statusLookup = \Civi\Api4\OptionValue::get(FALSE)
-    //                 ->addSelect('value')
-    //                 ->addWhere('option_group_id:name', '=', 'activity_status')
-    //                 ->addWhere('name', '=', $newStatus)
-    //                 ->setLimit(1)
-    //                 ->execute()
-    //                 ->first();
+            // If the status is a string (e.g. "Completed"), look up its ID
+            if (!is_numeric($newStatus)) {
+                $statusLookup = \Civi\Api4\OptionValue::get(FALSE)
+                    ->addSelect('value')
+                    ->addWhere('option_group_id:name', '=', 'activity_status')
+                    ->addWhere('name', '=', $newStatus)
+                    ->setLimit(1)
+                    ->execute()
+                    ->first();
 
-    //             if (!$statusLookup || !isset($statusLookup['value'])) {
-    //                 throw new \Exception("Status label '{$newStatus}' not found in activity_status option group.");
-    //             }
+                if (!$statusLookup || !isset($statusLookup['value'])) {
+                    throw new \Exception("Status label '{$newStatus}' not found in activity_status option group.");
+                }
 
-    //             $newStatus = (int) $statusLookup['value'];
-    //             error_log("Mapped status label to ID: {$newStatus}");
-    //         }
+                $newStatus = (int) $statusLookup['value'];
+                error_log("Mapped status label to ID: {$newStatus}");
+            }
 
-    //         // Update activities
-    //         $result = \Civi\Api4\Activity::update(TRUE)
-    //             ->addWhere('id', 'IN', $ids)
-    //             ->addValue('status_id', $newStatus)
-    //             ->execute();
+            // Update activities
+            $result = \Civi\Api4\Activity::update(TRUE)
+                ->addWhere('id', 'IN', $ids)
+                ->addValue('status_id', $newStatus)
+                ->execute();
 
-    //         $updatedActivities = iterator_to_array($result, false);
-    //         error_log("✅ Updated Activities: " . json_encode($updatedActivities));
+            $updatedActivities = iterator_to_array($result, false);
+            error_log("✅ Updated Activities: " . json_encode($updatedActivities));
    
 
-    //     error_log("========== END bulkUpdateActivityStatus ==========");
-    //     return $updatedActivities;
-    // }
-
-//     public static function bulkUpdateActivityStatus(array $ids, $newStatus): array
-// {
-//     $updatedActivities = [];
-
-//     error_log("⚙️ bulkUpdateActivityStatus() called with IDs: " . json_encode($ids) . " and newStatus: " . $newStatus);
-
-//     // If the status is a string (e.g. "Completed"), look up its ID
-//     if (!is_numeric($newStatus)) {
-//         $statusLookup = \Civi\Api4\OptionValue::get(FALSE)
-//             ->addSelect('value')
-//             ->addWhere('option_group_id:name', '=', 'activity_status')
-//             ->addWhere('name', '=', $newStatus)
-//             ->setLimit(1)
-//             ->execute()
-//             ->first();
-
-//         if (!$statusLookup || !isset($statusLookup['value'])) {
-//             error_log("❌ Status label '{$newStatus}' not found.");
-//             throw new \Exception("Status label '{$newStatus}' not found in activity_status option group.");
-//         }
-
-//         $newStatus = (int) $statusLookup['value'];
-//         error_log("🔄 Mapped status label to ID: {$newStatus}");
-//     }
-
-//     // Update activities
-//     $result = \Civi\Api4\Activity::update(TRUE)
-//         ->addWhere('id', 'IN', $ids)
-//         ->addValue('status_id', $newStatus)
-//         ->execute();
-
-//     $updatedActivities = iterator_to_array($result, false);
-//     error_log("✅ Updated Activities: " . json_encode($updatedActivities));
-
-//     error_log("========== END bulkUpdateActivityStatus ==========");
-
-//     return $updatedActivities;
-// }
-public static function bulkUpdateActivityStatus(array $ids, $newStatus): array
-{
-    \Civi::log()->debug("========== START bulkUpdateActivityStatus ==========");
-    \Civi::log()->debug("Input IDs: " . json_encode($ids));
-    \Civi::log()->debug("Input New Status (label or id): " . json_encode($newStatus));
-
-    try {
-        // Resolve if $newStatus is label
-        if (!is_numeric($newStatus)) {
-            $statusOption = civicrm_api4('OptionValue', 'get', [
-                'where' => [
-                    ['option_group_id.name', '=', 'activity_status'],
-                    ['label', '=', $newStatus],
-                ],
-                'limit' => 1,
-            ], 0);
-
-            \Civi::log()->debug("Resolved status label '{$newStatus}' to: " . json_encode($statusOption));
-
-            if (empty($statusOption['value'])) {
-                \Civi::log()->debug("⚠️ Could not resolve status label '{$newStatus}' to an ID, aborting update.");
-                return [];
-            }
-            $newStatus = $statusOption['value'];
-        }
-
-        \Civi::log()->debug("Using numeric status ID for update: " . $newStatus);
-
-        $result = \Civi\Api4\Activity::update(TRUE)
-            ->addWhere('id', 'IN', $ids)
-            ->addValue('status_id', $newStatus)
-            ->execute();
-
-        $updatedActivities = iterator_to_array($result, false);
-        \Civi::log()->debug("Updated Activities: " . json_encode($updatedActivities));
-    } catch (\Exception $e) {
-        \Civi::log()->debug("❌ Error updating activities: " . $e->getMessage());
-        $updatedActivities = [];
+        error_log("========== END bulkUpdateActivityStatus ==========");
+        return $updatedActivities;
     }
-
-    \Civi::log()->debug("========== END bulkUpdateActivityStatus ==========");
-    return $updatedActivities;
-}
 
 
     /**
