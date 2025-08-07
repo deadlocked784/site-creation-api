@@ -98,8 +98,8 @@ docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_activ
 docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_key "$(openssl rand -hex 16)"
 
 
-
 # --- Copying CiviCRM and admin portal---
+SOURCE_SITE_DIR="/var/www/html/test.beavergiver.life"
 echo "   - Migrating plugins ..."
 if [ ! -d "$SOURCE_SITE_DIR" ]; then
     echo "⚠️ Warning: Source site directory '$SOURCE_SITE_DIR' not found. Skipping plugin migration."
