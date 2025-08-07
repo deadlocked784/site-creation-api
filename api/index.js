@@ -163,8 +163,27 @@ const upload = multer({
 // --- API Endpoint ---
 app.post('/site-creation/v1/wordpress', 
     apiKeyAuth, 
-    upload.single('logo'), // 'logo' is the field name in form-data
-    (req, res) => {
+    upload.single('logo'),
+    async (req, res) => {
+    // Add file upload verification logging
+    if (req.file) {
+        console.log('\n📁 File Upload Details:');
+        console.log('   - Original Name:', req.file.originalname);
+        console.log('   - Saved Path:', req.file.path);
+        console.log('   - Size:', req.file.size, 'bytes');
+        console.log('   - MIME Type:', req.file.mimetype);
+        
+        // Verify file exists and is readable
+        try {
+            await fs.promises.access(req.file.path, fs.constants.R_OK);
+            console.log('   ✅ File is readable');
+        } catch (err) {
+            console.log('   ❌ File is not accessible:', err.message);
+        }
+    } else {
+        console.log('\n⚠️ No file was uploaded');
+    }
+
     // 1. Validate incoming payload
     const { subdomain, siteTitle, adminUsername, adminEmail, users } = req.body;
     if (!subdomain || !siteTitle || !adminUsername || !adminEmail) {
@@ -217,8 +236,13 @@ app.post('/site-creation/v1/wordpress',
             // Get the uploaded file path if exists
             const logoPath = req.file ? req.file.path : null;
 
-            // Add logo path to configure_wordpress.sh arguments if exists
+            // Update the logging for configure_wordpress.sh execution
             const configArgs = [subdomain, siteTitle, ...(logoPath ? [logoPath] : []), ...userArgs];
+            console.log('\n🔧 Configure WordPress Script:');
+            console.log('   - Logo Path:', logoPath || 'Not provided');
+            console.log('   - All Arguments:', configArgs);
+
+            // Add logo path to configure_wordpress.sh arguments if exists
             await runScript('configure_wordpress.sh', configArgs);
             
             // Cleanup uploaded file
