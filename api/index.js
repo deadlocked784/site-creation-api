@@ -165,7 +165,12 @@ app.post('/site-creation/v1/wordpress',
     apiKeyAuth, 
     upload.single('logo'),
     async (req, res) => {
-    // Add file upload verification logging
+    // Enhanced file upload verification logging
+    console.log('\n📝 Request Details:');
+    console.log('   - Headers:', req.headers);
+    console.log('   - Content-Type:', req.headers['content-type']);
+    console.log('   - Body:', req.body);
+    
     if (req.file) {
         console.log('\n📁 File Upload Details:');
         console.log('   - Original Name:', req.file.originalname);
@@ -177,11 +182,20 @@ app.post('/site-creation/v1/wordpress',
         try {
             await fs.promises.access(req.file.path, fs.constants.R_OK);
             console.log('   ✅ File is readable');
+            // Add file stats
+            const stats = await fs.promises.stat(req.file.path);
+            console.log('   📊 File Stats:', {
+                size: stats.size,
+                created: stats.birthtime,
+                modified: stats.mtime
+            });
         } catch (err) {
             console.log('   ❌ File is not accessible:', err.message);
         }
     } else {
         console.log('\n⚠️ No file was uploaded');
+        console.log('   - Request files:', req.files);
+        console.log('   - Request file:', req.file);
     }
 
     // 1. Validate incoming payload
@@ -233,8 +247,19 @@ app.post('/site-creation/v1/wordpress',
                 });
             }
             
-            // Get the uploaded file path if exists
+            // Move file handling before script execution
             const logoPath = req.file ? req.file.path : null;
+            if (logoPath) {
+                console.log('\n🖼️  Logo File Verification:');
+                console.log('   - Path exists:', fs.existsSync(logoPath));
+                console.log('   - Full path:', path.resolve(logoPath));
+                try {
+                    const fileContent = await fs.promises.readFile(logoPath);
+                    console.log('   - File size:', fileContent.length, 'bytes');
+                } catch (err) {
+                    console.log('   ❌ Error reading file:', err.message);
+                }
+            }
 
             // Update the logging for configure_wordpress.sh execution
             const configArgs = [subdomain, siteTitle, ...(logoPath ? [logoPath] : []), ...userArgs];
