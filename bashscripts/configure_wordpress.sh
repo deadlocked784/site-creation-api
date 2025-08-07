@@ -97,35 +97,7 @@ docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp --for
 docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_activated_time "$(date +%s)"
 docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_key "$(openssl rand -hex 16)"
 
-# --- Copy Front Page Content ---
-echo "   - Copying front page content from template site..."
-SOURCE_SITE_DIR="/var/www/html/site-creation-api/templates/sites/test2.socialservicesconnect.com"
 
-if [ -d "$SOURCE_SITE_DIR" ]; then
-    # Export template front page content
-    docker-compose exec -T -u www-data wordpress wp post get $(docker-compose exec -T -u www-data wordpress wp option get page_on_front) \
-        --field=post_content --format=json > template_content.json
-
-    # Create new front page
-    FRONT_PAGE_ID=$(docker-compose exec -T -u www-data wordpress wp post create \
-        --post_type=page \
-        --post_title='Home' \
-        --post_status='publish' \
-        --post_content="$(cat template_content.json)" \
-        --porcelain)
-
-    # Set as front page
-    docker-compose exec -T -u www-data wordpress wp option update page_on_front "$FRONT_PAGE_ID"
-    docker-compose exec -T -u www-data wordpress wp option update show_on_front 'page'
-
-    # Copy any related media files
-    echo "   - Copying media files..."
-    cp -r "$SOURCE_SITE_DIR/app/wp-content/uploads/"* "$SITE_DIR/app/wp-content/uploads/"
-
-    echo "✅ Front page content copied successfully."
-else
-    echo "⚠️ Warning: Template site not found at $SOURCE_SITE_DIR. Skipping front page copy."
-fi
 
 # --- Copying CiviCRM and admin portal---
 echo "   - Migrating plugins ..."
