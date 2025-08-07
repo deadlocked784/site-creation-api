@@ -5,6 +5,7 @@ require('dotenv').config();
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
 
 const app = express();
 app.use(express.json());
@@ -131,8 +132,39 @@ const apiKeyAuth = (req, res, next) => {
     next();
 };
 
+// Configure multer for file upload
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, 'uploads');
+        if (!fs.existsSync(uploadDir)){
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`);
+    }
+});
+
+const upload = multer({ 
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!allowedTypes.includes(file.mimetype)) {
+            return cb(new Error('Only .png, .jpg and .gif files are allowed!'), false);
+        }
+        cb(null, true);
+    }
+});
+
 // --- API Endpoint ---
-app.post('/site-creation/v1/wordpress', apiKeyAuth, (req, res) => {
+app.post('/site-creation/v1/wordpress', 
+    apiKeyAuth, 
+    upload.single('logo'), // 'logo' is the field name in form-data
+    (req, res) => {
     // 1. Validate incoming payload
     const { subdomain, siteTitle, adminUsername, adminEmail, users } = req.body;
     if (!subdomain || !siteTitle || !adminUsername || !adminEmail) {
@@ -182,20 +214,33 @@ app.post('/site-creation/v1/wordpress', apiKeyAuth, (req, res) => {
                 });
             }
             
-            await runScript('configure_wordpress.sh', [subdomain, siteTitle, ...userArgs]);
+            // Get the uploaded file path if exists
+            const logoPath = req.file ? req.file.path : null;
+
+            // Add logo path to configure_wordpress.sh arguments if exists
+            const configArgs = [subdomain, siteTitle, ...(logoPath ? [logoPath] : []), ...userArgs];
+            await runScript('configure_wordpress.sh', configArgs);
             
+            // Cleanup uploaded file
+            if (logoPath && fs.existsSync(logoPath)) {
+                fs.unlinkSync(logoPath);
+            }
+
             sendSuccessEmail(adminEmail, siteUrl, adminUsername).catch(console.error);
-            
             await runScript('setup_cron.sh', [subdomain]);
             console.log(`\n✨ Successfully completed all steps for ${subdomain}.`);
 
         } catch (error) {
+            // Cleanup on error
+            if (logoPath && fs.existsSync(logoPath)) {
+                fs.unlinkSync(logoPath);
+            }
             console.error(`🔥 An error occurred during the site creation process for ${subdomain}.`);
             console.error(error.message);
             sendFailureEmail(adminEmail, siteUrl, error.message).catch(console.error);
         }
     })();
-}
+});
 
 app.listen(PORT, () => {
     console.log(`🚀 WordPress Creation API listening on port ${PORT}`);
