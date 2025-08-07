@@ -199,12 +199,24 @@ app.post('/site-creation/v1/wordpress',
     }
 
     // 1. Validate incoming payload
-    const { subdomain, siteTitle, adminUsername, adminEmail, users } = req.body;
+    let { subdomain, siteTitle, adminUsername, adminEmail, users } = req.body; // Use 'let'
+
     if (!subdomain || !siteTitle || !adminUsername || !adminEmail) {
         return res.status(400).json({ 
             error: 'Missing required fields. Required: subdomain, siteTitle, adminUsername, adminEmail' 
         });
     }
+
+    // === START MODIFICATION ===
+    // Handle the 'users' field which arrives as a JSON string from the form
+    if (users && typeof users === 'string') {
+        try {
+            users = JSON.parse(users);
+        } catch (e) {
+            return res.status(400).json({ error: 'The users field contains invalid JSON.' });
+        }
+    }
+    // === END MODIFICATION ===
     // Basic sanitization
     if (!/^[a-z0-9-]+$/.test(subdomain)) {
         return res.status(400).json({ error: 'Invalid subdomain format. Use lowercase letters, numbers, and hyphens only.' });

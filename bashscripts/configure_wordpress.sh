@@ -101,13 +101,22 @@ docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_
 # --- Handle Site Icon Upload ---
 if [ "$#" -gt 2 ] && [ -f "$3" ]; then
     echo "   - Setting up site icon from uploaded image..."
-    # Import the media file
-    ICON_ID=$(docker-compose exec -T -u www-data wordpress wp media import "$3" --porcelain)
+    
+    # Copy file into container's temp directory
+    TEMP_FILE="/tmp/site-icon-$(date +%s).tmp"
+    docker-compose cp "$3" "wordpress:$TEMP_FILE"
+    
+    # Import the media file from container's path
+    ICON_ID=$(docker-compose exec -T -u www-data wordpress wp media import "$TEMP_FILE" --porcelain)
     
     if [ -n "$ICON_ID" ]; then
         # Set as site icon
         docker-compose exec -T -u www-data wordpress wp option update site_icon "$ICON_ID"
-        echo "✅ Site icon set successfully"
+        docker-compose exec -T -u www-data wordpress wp theme mod set site_icon "$ICON_ID"
+        echo "✅ Site icon set successfully (ID: $ICON_ID)"
+        
+        # Cleanup temp file in container
+        docker-compose exec -T wordpress rm -f "$TEMP_FILE"
     else
         echo "⚠️ Warning: Failed to import site icon"
     fi
