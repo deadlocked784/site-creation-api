@@ -101,36 +101,6 @@ docker-compose exec -T -u www-data wordpress wp option update wp_mail_smtp_mail_
 echo "   - Installing and activating Elementor..."
 docker-compose exec -T -u www-data wordpress wp plugin install elementor --activate
 
-# --- Import and Configure Front Page ---
-echo "   - Setting up front page from template..."
-TEMPLATE_JSON="/var/www/html/site-creation-api/templates/pages/elementor-581-2025-08-07.json"
-
-if [ -f "$TEMPLATE_JSON" ]; then
-    # Create a new page to hold the template
-    PAGE_ID=$(docker-compose exec -T -u www-data wordpress wp post create \
-        --post_type=page \
-        --post_title='Home' \
-        --post_status='publish' \
-        --post_content="$(cat $TEMPLATE_JSON)" \
-        --porcelain)
-
-    if [ -n "$PAGE_ID" ]; then
-        # Set the page as front page
-        docker-compose exec -T -u www-data wordpress wp option update show_on_front 'page'
-        docker-compose exec -T -u www-data wordpress wp option update page_on_front "$PAGE_ID"
-        
-        # Add Elementor page settings
-        docker-compose exec -T -u www-data wordpress wp post meta update "$PAGE_ID" _elementor_edit_mode builder
-        docker-compose exec -T -u www-data wordpress wp post meta update "$PAGE_ID" _elementor_template_type page
-        docker-compose exec -T -u www-data wordpress wp post meta update "$PAGE_ID" _wp_page_template elementor_header_footer
-        
-        echo "✅ Front page created and set successfully (ID: $PAGE_ID)"
-    else
-        echo "⚠️ Warning: Failed to create front page"
-    fi
-else
-    echo "⚠️ Warning: Template file not found at $TEMPLATE_JSON"
-fi
 
 
 # --- Handle Site Icon Upload ---
