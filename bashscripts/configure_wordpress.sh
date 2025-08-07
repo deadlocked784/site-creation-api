@@ -112,15 +112,18 @@ if [ -f "$TEMPLATE_JSON" ]; then
         --post_type=page \
         --post_title='Home' \
         --post_status='publish' \
+        --post_content="$(cat $TEMPLATE_JSON)" \
         --porcelain)
 
     if [ -n "$PAGE_ID" ]; then
-        # Import the Elementor template
-        docker-compose exec -T -u www-data wordpress wp elementor import-templates "$TEMPLATE_JSON"
-        
         # Set the page as front page
         docker-compose exec -T -u www-data wordpress wp option update show_on_front 'page'
         docker-compose exec -T -u www-data wordpress wp option update page_on_front "$PAGE_ID"
+        
+        # Add Elementor page settings
+        docker-compose exec -T -u www-data wordpress wp post meta update "$PAGE_ID" _elementor_edit_mode builder
+        docker-compose exec -T -u www-data wordpress wp post meta update "$PAGE_ID" _elementor_template_type page
+        docker-compose exec -T -u www-data wordpress wp post meta update "$PAGE_ID" _wp_page_template elementor_header_footer
         
         echo "✅ Front page created and set successfully (ID: $PAGE_ID)"
     else

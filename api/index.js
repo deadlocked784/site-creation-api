@@ -245,6 +245,8 @@ app.post('/site-creation/v1/wordpress',
 
     // Run the site creation process asynchronously
     (async () => {
+        const logoPath = req.file ? req.file.path : null;  // Move this to the top
+        
         try {
             await runScript('create_wordpress_site.sh', [subdomain]);
             await runScript('install_wordpress.sh', [subdomain, siteTitle, adminUsername, adminEmail]);
@@ -254,51 +256,27 @@ app.post('/site-creation/v1/wordpress',
             if (users && users.length > 0) {
                 users.forEach(u => {
                     userArgs.push(u.username, u.email, u.role, u.password || '');
-                    // Send password reset email to each user
                     sendUserPasswordResetEmail(u.email, siteUrl, u.username).catch(console.error);
                 });
             }
-            
-            // Move file handling before script execution
-            const logoPath = req.file ? req.file.path : null;
-            if (logoPath) {
-                console.log('\n🖼️  Logo File Verification:');
-                console.log('   - Path exists:', fs.existsSync(logoPath));
-                console.log('   - Full path:', path.resolve(logoPath));
-                try {
-                    const fileContent = await fs.promises.readFile(logoPath);
-                    console.log('   - File size:', fileContent.length, 'bytes');
-                } catch (err) {
-                    console.log('   ❌ Error reading file:', err.message);
-                }
-            }
 
-            // Update the logging for configure_wordpress.sh execution
+            // Add logo path to configure_wordpress.sh arguments if exists
             const configArgs = [subdomain, siteTitle, ...(logoPath ? [logoPath] : []), ...userArgs];
             console.log('\n🔧 Configure WordPress Script:');
             console.log('   - Logo Path:', logoPath || 'Not provided');
             console.log('   - All Arguments:', configArgs);
 
-            // Add logo path to configure_wordpress.sh arguments if exists
             await runScript('configure_wordpress.sh', configArgs);
-            
-            // Cleanup uploaded file
-            if (logoPath && fs.existsSync(logoPath)) {
-                fs.unlinkSync(logoPath);
-            }
-
-            sendSuccessEmail(adminEmail, siteUrl, adminUsername).catch(console.error);
-            await runScript('setup_cron.sh', [subdomain]);
-            console.log(`\n✨ Successfully completed all steps for ${subdomain}.`);
 
         } catch (error) {
-            // Cleanup on error
-            if (logoPath && fs.existsSync(logoPath)) {
-                fs.unlinkSync(logoPath);
-            }
             console.error(`🔥 An error occurred during the site creation process for ${subdomain}.`);
             console.error(error.message);
             sendFailureEmail(adminEmail, siteUrl, error.message).catch(console.error);
+        } finally {
+            // Cleanup uploaded file in finally block
+            if (logoPath && fs.existsSync(logoPath)) {
+                fs.unlinkSync(logoPath);
+            }
         }
     })();
 });
